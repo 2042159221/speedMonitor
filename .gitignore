@@ -1,0 +1,51 @@
+# OS and editor local state
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.code-workspace
+*.swp
+*.swo
+
+# Local assistant/cache state
+.codex/
+.claude/
+
+# Generated compile databases and local logs
+compile_commands.json
+*.log
+
+# Keil/MDK build outputs
+MDK-ARM/Bike/
+MDK-ARM/build/
+MDK-ARM/.cmsis/
+MDK-ARM/.eide/
+MDK-ARM/add_all.exe
+MDK-ARM/*.log
+MDK-ARM/*.lst
+MDK-ARM/*.bak
+MDK-ARM/*.tmp
+MDK-ARM/*.uvguix.*
+
+# Generic embedded build artifacts
+*.o
+*.d
+*.crf
+*.lst
+*.map
+*.axf
+*.elf
+*.hex
+*.bin
+*.s19
+*.htm
+*.lnp
+*.dep
+*.obj
+
+# Backup files
+*.bak
+*.bak_*
+*.backup
+*.orig
+*~
