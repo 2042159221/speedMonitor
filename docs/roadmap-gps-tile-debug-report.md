@@ -61,7 +61,38 @@ For the same point, GCJ-02 shifts the coordinate to approximately:
 
 If the SD card contains WGS/Web-Mercator tiles generated for `13372/7134`, the real GPS path will look for `13373/7134` after GCJ conversion and the map appears blank.
 
-### 3. The earlier flower-screen freeze was DMA/CCM related
+### 3. Outdoor retest NMEA points to a different tile area
+
+The outdoor NMEA sample contains this valid WGS-84 position:
+
+```text
+$GNGGA,...,4006.81888,N,11621.89413,E,...
+$GNRMC,...,A,4006.81888,N,11621.89413,E,...
+```
+
+Converted to decimal degrees:
+
+```text
+lat = 40 + 6.81888 / 60  = 40.113648
+lon = 116 + 21.89413 / 60 = 116.364902
+```
+
+At `zoom=14`, this position maps to:
+
+```text
+center tile = 13487,6195
+expected file = 0:/map/14/13487/6195/tile.bmp
+```
+
+This is not the same area as the virtual test coordinate:
+
+```text
+113.84,22.63 -> z14 tile 13372,7134
+```
+
+If the SD card only contains tiles around `13372/7134`, the firmware will correctly look for `13487/6195` outdoors and still display a blank map. In that case the fix is to generate/copy the 3x3 tile set around the real test location, not to change LVGL image loading.
+
+### 4. The earlier flower-screen freeze was DMA/CCM related
 
 After real tiles started loading, the board once showed display corruption and froze.
 
@@ -83,6 +114,12 @@ The FatFs LVGL driver was changed to detect CCM destination buffers and use a sm
 - Added `GPS_COORDINATE_USE_GCJ02`.
 - Real GPS coordinates now default to WGS-84, matching the existing SD tile set.
 - GCJ-02 conversion is still available by setting `GPS_COORDINATE_USE_GCJ02` to `1`.
+- Added a short GPS frame log showing whether the frame handed to the parser contains `GGA` and `RMC`.
+
+### `Inf/Inf_ATGM336H.c`
+
+- Real UART receive now accumulates location-bearing NMEA fragments until an `RMC` sentence is present.
+- The GPS task receives a more complete positioning cycle instead of whichever `GGA`/`RMC` fragment happened to be latest at the polling time.
 
 ### `App/ui/ui_roadmap.c`
 

@@ -39,6 +39,7 @@
 #include "Inf_Slope.h"
 #include "Inf_LastLocation.h"
 #include <math.h>
+#include <string.h>
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -59,6 +60,7 @@
 #define GPS_DEG_TO_RAD 0.017453292519943295f
 #define GPS_DEBUG_VIRTUAL_LOCATION 0
 #define GPS_COORDINATE_USE_GCJ02 0
+#define GPS_DEBUG_FRAME_LOG 1
 #define GPS_DEBUG_VIRTUAL_LON 113.84f
 #define GPS_DEBUG_VIRTUAL_LAT 22.63f
 #define GPS_DEBUG_VIRTUAL_SATELLITES 8U
@@ -608,6 +610,12 @@ void GPSTaskFunc(void *argument)
   {
     Inf_ATGM336H_Poll();
     if(Inf_ATGM336H_TakeFrame(gpsFrame, sizeof(gpsFrame))){
+#if GPS_DEBUG_FRAME_LOG
+      COM_DEBUG_LN("GPS frame len=%u gga=%d rmc=%d",
+                   (unsigned int)strlen(gpsFrame),
+                   strstr(gpsFrame, "GGA,") != NULL ? 1 : 0,
+                   strstr(gpsFrame, "RMC,") != NULL ? 1 : 0);
+#endif
       //有数据需要接收
       //解析卫星个数
       str = strstr (gpsFrame,"GGA,");

@@ -15,6 +15,8 @@ static const float EE = 0.00669342162296594323f; // 椭球体偏心率平方
 //接收定位数据的缓冲
 uint8_t loc_buff[LOC_BUFF_MAX_SIZE] = {0};
 uint8_t loc_frame_buff[LOC_BUFF_MAX_SIZE] = {0};
+static uint8_t loc_accum_buff[LOC_BUFF_MAX_SIZE] = {0};
+static uint16_t loc_accum_len = 0U;
 //缓冲中数据的长度
 volatile uint16_t loc_len = 0;
 
@@ -81,6 +83,34 @@ static bool Inf_ATGM336H_HasLocationSentence(const char *frame)
     return (strstr(frame, "GGA,") != NULL) || (strstr(frame, "RMC,") != NULL);
 }
 
+static bool Inf_ATGM336H_HasRmcSentence(const char *frame)
+{
+    return (strstr(frame, "RMC,") != NULL);
+}
+
+static void Inf_ATGM336H_ResetAccumulator(void)
+{
+    loc_accum_len = 0U;
+    loc_accum_buff[0] = '\0';
+}
+
+static void Inf_ATGM336H_AppendToAccumulator(const uint8_t *data, uint16_t size)
+{
+    uint16_t copy_size = size;
+
+    if (copy_size >= LOC_BUFF_MAX_SIZE) {
+        copy_size = LOC_BUFF_MAX_SIZE - 1U;
+    }
+
+    if ((loc_accum_len + copy_size) >= LOC_BUFF_MAX_SIZE) {
+        Inf_ATGM336H_ResetAccumulator();
+    }
+
+    memcpy(&loc_accum_buff[loc_accum_len], data, copy_size);
+    loc_accum_len = (uint16_t)(loc_accum_len + copy_size);
+    loc_accum_buff[loc_accum_len] = '\0';
+}
+
 //串口中断回调，遇到空闲帧会进来
 void Inf_ATGM336H_Callback(uint16_t size) {
     if (size >= LOC_BUFF_MAX_SIZE) {
@@ -89,9 +119,14 @@ void Inf_ATGM336H_Callback(uint16_t size) {
     loc_buff[size] = '\0';
 
     if (Inf_ATGM336H_HasLocationSentence((const char *)loc_buff)) {
-        memcpy(loc_frame_buff, loc_buff, size);
-        loc_frame_buff[size] = '\0';
-        loc_len = size;
+        Inf_ATGM336H_AppendToAccumulator(loc_buff, size);
+
+        if (Inf_ATGM336H_HasRmcSentence((const char *)loc_accum_buff)) {
+            memcpy(loc_frame_buff, loc_accum_buff, loc_accum_len);
+            loc_frame_buff[loc_accum_len] = '\0';
+            loc_len = loc_accum_len;
+            Inf_ATGM336H_ResetAccumulator();
+        }
     }
 
     //再次开始下一次接收
@@ -132,6 +167,7 @@ static void Inf_ATGM336H_Send(uint8_t* cmd,uint8_t size){
 
 void Inf_ATGM336H_Init(void){
     loc_len = 0U;
+    Inf_ATGM336H_ResetAccumulator();
     //开启串口接收
     Inf_ATGM336H_StartReceive();
 
